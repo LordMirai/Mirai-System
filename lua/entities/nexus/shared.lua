@@ -13,6 +13,7 @@ ENT.Contact = "cocomemelol@yahoo.com | Lord Mirai(未来)#0039"
 
 MSYS = MSYS or {}
 NEXUS = NEXUS or {}
+MirUtil = MirUtil or {}
 
 function ENT:Reset()
     if not self:IsValid() then

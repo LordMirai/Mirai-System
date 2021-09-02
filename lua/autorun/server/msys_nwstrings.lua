@@ -15,3 +15,7 @@ util.AddNetworkString("MSYS_RequestBroadcast")
 
 util.AddNetworkString("MSYS_NEXUS_RequestLog")
 util.AddNetworkString("MSYS_AKASHA_RequestLog")
+
+util.AddNetworkString("MSYS_Request_FetchLogs") -- for getting the sv logs clientside
+util.AddNetworkString("MSYS_Request_SendLogs")
+util.AddNetworkString("NEXUS_ClearLogs")

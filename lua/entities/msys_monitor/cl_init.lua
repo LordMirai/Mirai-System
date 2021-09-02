@@ -4,7 +4,15 @@ function ENT:Draw()
 	self:DrawModel()
 end
 
-function MSYS.debugLogs(ply,monitor,akasha)
+local function requestLogs(mon,useAkasha)
+	net.Start("MSYS_Request_FetchLogs")
+	net.WriteEntity(LocalPlayer())
+	net.WriteEntity(mon)
+	net.WriteBool(useAkasha)
+	net.SendToServer()
+end
+
+function MSYS.debugLogs(ply,monitor,akasha,logs)
 	akasha = akasha or false
 	if not akasha then
 		ply:Tell("Displaying debug logs for NEXUS\n(printed in console")
@@ -15,21 +23,24 @@ function MSYS.debugLogs(ply,monitor,akasha)
 	
 	local logF = vgui.Create("DFrame")
 	logF:SetTitle(not akasha and "[MSYS - NEXUS] Debug logs" or "[MSYS - AKASHA] Debug logs")
-	MirUtil.ClassicFrame(logF,500,500)
+	MirUtil.ClassicFrame(logF,640,700)
 
-	local logList = vgui.Create("DListVew",logF)
-	logList:SetSize(450,400)
-	logList:SetPos(15,10)
+	local logList = vgui.Create("DListView",logF)
+	logList:SetSize(550,600)
+	logList:SetPos(15,40)
 	logList:AddColumn("Log")
 	logList:SetMultiSelect(false)
 	logList.OnRowSelected = function(list,ind,row)
 		selLine = row:GetValue(1)
 	end
 	if not akasha then
-		for k,v in pairs(NEXUS.Logs) do
+		print("logs received are:")
+		PrintTable(logs)
+		for k,v in pairs(logs) do
 			logList:AddLine(v)
 		end
 	else
+
 		for k,v in pairs(NEXUS.Akasha.Logs) do
 			logList:AddLine(v)
 		end
@@ -41,30 +52,31 @@ function MSYS.debugLogs(ply,monitor,akasha)
 	backB:SetPos(logF:GetWide()/2-backB:GetWide()/2,logF:GetTall()-backB:GetTall()-10)
 	backB:SetTextColor(Color(250,250,250))
 	backB:SetFont("MSYS_Monitor_Font")
-	MirUtil.Button(backB,logF,Color(140,80,10),Color(240,150,30))
-	backB.DoClick = function()
+	MirUtil.Button(backB,logF,Color(140,80,10),Color(240,150,30),function()
 		if monitor:IsValid() then
-			MSYS.OpenMonitorView(ply,monitor)
+			MSYS.OpenMonitorView()
 		end
 		logF:Remove()
-	end
+	end)
 
 	local copyB = vgui.Create("DButton",logF)
 	copyB:SetText("Copy line")
 	copyB:SetSize(60,20)
-	MirUtil.Button(copyB,logF,Color(60,12,32),Color(90,50,200))
-	copyB.DoClick = function()
+	copyB:SetPos(logF:GetWide()-copyB:GetWide()-10,30)
+	MirUtil.Button(copyB,logF,Color(60,12,32),Color(90,50,200),function()
 		if selLine == "" then
 			ply:Tell("Na bro, you must select a line.",Color(250,0,0))
 			return
 		end
 		SetClipboardText(selLine)
 		ply:Tell("Line copied to clipboard.")
-	end
+	end)
 end
 
 -- MAIN MONITOR FUNCTION!!!
-function MSYS.OpenMonitorView(ply,mon,clearTerminal)
+function MSYS.OpenMonitorView(clearTerminal)
+	local ply = LocalPlayer()
+	local mon = NEXUS.NEXUS.Monitor
 	if clearTerminal == nil then clearTerminal = false end
 	local frame = vgui.Create("DFrame")
 	MirUtil.ClassicFrame(frame,700,700)
@@ -97,31 +109,32 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 			draw.DrawText("DEBUG MENU", "MSYS_Monitor_Font_noshadow", s:GetWide()/2,5,Color(155,155,155),TEXT_ALIGN_CENTER)
 		end
 
-		local unhide
+		local unhide = vgui.Create("DButton",frame)
+		unhide:SetSize(100,20)
+		unhide:SetPos(550,80)
+		unhide:SetText("Unhide debug")
+		unhide:SetTextColor(Color(250,250,250))
+		unhide:SetFont("MirUtilMenuFontSmall")
+		unhide:SetVisible(false)
 
 		local hideB = vgui.Create("DButton",deb)
-		hideB:SetSize(10,10)
+		hideB:SetSize(15,15)
+		hideB:SetPos(0,deb:GetTall()-hideB:GetTall())
 		hideB:SetText("X")
 		hideB:SetTextColor(Color(250,250,250))
-		hideB:SetFont("MSYS_Monitor_Font_noshadow")
+		hideB:SetFont("MSYS_Monitor_Font_Small")
 		function hideB:Paint(w,h)
 			draw.RoundedBox(0,0,0,w,h,Color(0,0,0))
 			draw.RoundedBox(0,1,1,w-2,h-2,Color(250,0,0))
 		end
 		hideB.DoClick = function()
 			deb:SetVisible(false)
+			unhide:SetVisible(true)
 		end
 
-		local unhide = vgui.Create("DButton",deb)
-		unhide:SetSize(40,10)
-		unhide:SetPos(200)
-		unhide:SetText("Unhide debug")
-		unhide:SetTextColor(Color(250,250,250))
-		unhide:SetFont("MirUtilMenuFontSmall")
-		MirUtil.Button(unhide,deb,Color(30,120,30),Color(20,225,20),function()
-			if isvalid(hideB) then
-				hideB:SetVisible(true)
-			end
+		MirUtil.Button(unhide,frame,Color(30,120,30),Color(20,225,20),function()
+			deb:SetVisible(true)
+			unhide:SetVisible(false)
 		end)
 
 		local accDrop = vgui.Create("DComboBox",deb)
@@ -137,7 +150,7 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 		function accDrop:OnSelect(ind,name,level)
 			if mon:IsValid() then
 				mon:SetLevel(level)
-				MSYS.OpenMonitorView(ply,mon)
+				MSYS.OpenMonitorView()
 			end
 			frame:Remove()
 		end
@@ -160,7 +173,7 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 		showLogs:SetTextColor(Color(250,250,250))
 		showLogs:SetText("Show logs")
 		MirUtil.Button(showLogs,deb,Color(30,30,130),Color(25,20,220),function()
-			MSYS.debugLogs(ply,mon)
+			requestLogs(mon,false)
 			frame:Remove()
 		end)
 
@@ -171,7 +184,7 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 		showAKLogs:SetTextColor(Color(250,250,250))
 		showAKLogs:SetText("Show Akasha logs")
 		MirUtil.Button(showAKLogs,deb,Color(30,30,130),Color(25,20,220),function()
-			MSYS.debugLogs(ply,mon,true)
+			requestLogs(mon,true)
 			frame:Remove()
 		end)
 
@@ -181,8 +194,8 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 	-- start of login sequence
 
 	local loginPanel = vgui.Create("DPanel",frame)
-	loginPanel:SetSize(130,70)
-	loginPanel:SetPos(10,500)
+	loginPanel:SetSize(210,80)
+	loginPanel:SetPos(20,500)
 	loginPanel:SetVisible(mon:GetAccessLevel() != LEVEL_NEXUS) -- no login panel if at top level.
 
 	function loginPanel:Paint(w,h)
@@ -191,24 +204,39 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 	end
 
 	local user = vgui.Create("DTextEntry",loginPanel)
-	user:SetSize(120,15)
-	user:SetPos(5,10)
-	user:SetPlaceholderText("Username")
+	user:SetSize(190,15)
+	user:SetPos(10,10)
+	user:SetPlaceholderText("            	           Username")
 
 	local pass = vgui.Create("DTextEntry",loginPanel)
-	pass:SetSize(120,15)
-	pass:SetPos(5,30)
-	pass:SetPlaceholderText("Password")
+	pass:SetSize(190,15)
+	pass:SetPos(10,30)
+	pass:SetPlaceholderText("            	           Password")
 
 	local loginBtt = vgui.Create("DButton",loginPanel)
-	loginBtt:SetSize(80,15)
+	loginBtt:SetSize(190,18)
 	loginBtt:SetPos(loginPanel:GetWide()/2-loginBtt:GetWide()/2,50)
-	loginBtt:SetText("Login to "..mon:nextLevel())
+	loginBtt:SetText("Login to "..(MSYS.LevelStrings[mon:nextLevel()] or ""))
 	loginBtt:SetTextColor(Color(250,250,250))
-	loginBtt:SetFont("MSYS_Monitor_Font")
-	MirUtil.Button(loginBtt,loginPanel,Color(20,150,20),Color(10,250,20))
+	loginBtt:SetFont("MSYS_Monitor_Font_Small")
+	MirUtil.Button(loginBtt,loginPanel,Color(20,150,20),Color(10,250,20), function()
+		local us = user:GetValue()
+		local ps = pass:GetValue()
 
-	function loginBtt:DoClick()
+		if MSYS.err(us) then
+			ply:Tell("Improper input of Username.",Color(220,10,10))
+			return
+		end
+		if MSYS.err(ps) then
+			ply:Tell("Improper input of Password.",Color(220,10,10))
+			return
+		end
+
+		MSYS.attemptLogin(ply,us,ps,mon)
+		frame:Remove()
+	end)
+
+	pass.OnEnter = function() -- copy paste seemed necessary. sorry.
 		local us = user:GetValue()
 		local ps = pass:GetValue()
 
@@ -228,12 +256,14 @@ function MSYS.OpenMonitorView(ply,mon,clearTerminal)
 	-- end login sequence
 
 	local termBtt = vgui.Create("DButton",frame)
-	termBtt:SetSize(120,40)
+	termBtt:SetSize(220,40)
+	termBtt:SetPos(450,500)
 	termBtt:SetFont("MirUtilMenuFont")
 	termBtt:SetTextColor(Color(250,250,250))
 	termBtt:SetText("Open Terminal")
+	termBtt:SetVisible(mon:Allowed(LEVEL_ADMIN))
 	MirUtil.Button(termBtt,frame,Color(91,91,165),Color(74,64,212),function()
-		NEXUS.StartTerminal(ply,mon,clearTerminal)
+		NEXUS.StartTerminal(clearTerminal)
 		frame:Remove()
 	end)
 
@@ -247,5 +277,14 @@ net.Receive("MSYS_Monitor_Use", function()
 	local ply = LocalPlayer()
 	local mon = net.ReadEntity()
 
-	MSYS.OpenMonitorView(ply,mon,true) -- the appended "true" implies erasing the terminal history as well.
+	MSYS.OpenMonitorView(true) -- the appended "true" implies erasing the terminal history as well.
+end)
+
+net.Receive("MSYS_Request_SendLogs", function()
+	local ply = LocalPlayer()
+	local monitor = net.ReadEntity()
+	local akasha = net.ReadBool()
+	local logs = net.ReadTable()
+
+	MSYS.debugLogs(ply,monitor,akasha,logs)
 end)

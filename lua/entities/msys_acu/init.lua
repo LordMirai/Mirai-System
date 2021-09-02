@@ -4,7 +4,7 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 function ENT:Initialize()
-	self:SetModel("models/props_lab/securitybank.mdl")
+	self:SetModel("models/hunter/blocks/cube075x075x075.mdl")
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_BBOX)
@@ -13,5 +13,14 @@ function ENT:Initialize()
 	self:DrawShadow(false)
 
 	self.IsACU = true
+
+	local phys = self:GetPhysicsObject()
+	if phys:IsValid() then
+		phys:Wake()
+	end
+
+	if self:IsValid() then
+		self:Activate()
+	end
 
 end

@@ -45,7 +45,7 @@ MSYS.LevelColors = {
     [LEVEL_NEXUS] = Color(20, 5, 130)
 }
 
-NEXUS.DummyMessages = { -- these are useless processing things, to just be put there.
+function NEXUS.DummyMessages() return { -- these are useless processing things, to just be put there.
 "Scanned for hostilities.", "Checking peripherals... OK", "DEEP Connection healthy",
 "ERROR in module " .. math.random(23, 50) .. " at 'ACU/A" .. math.random(2000, 5000) .. string.char(65, 90) ..
     "-EPSILON'", "You need to purge the primary and auxiliary polar casing.",
@@ -54,12 +54,16 @@ NEXUS.DummyMessages = { -- these are useless processing things, to just be put t
 "Stitched " .. math.random(2, 9) .. " files.", "Defragmented registry.", "Refreshed requests from ACU",
 "Disengaged Cross Medium Module", "Environment healthy", "Handling packets from UU", "Transmitting status to ACU",
 "Performing handshake protocol", "Handshake completed with connected modules.", "Invalid gateway between threads.",
-math.random(10, 100) .. " packets to be imported.", "Exchanged " .. math.random(12, 22) .. " packages with D.E.E.P"}
+math.random(10, 100) .. " packets to be imported.",
+ "Exchanged " .. math.random(12, 52) .. " packages with D.E.E.P"} end
+
+MSYS.DummyMessages = NEXUS.DummyMessages()
 
 -- General enums. Closer thing to a config so far.
 -- #################################################
 
-ROPE_LENGTH = 200 -- initial i suppose
+ROPE_LENGTH_MONITOR = 200 -- length for monitor
+ROPE_LENGTH = 80 -- length for normal peripherals suppose
 MSYS.DEBUG = true -- enabling debug mode for now, so we can use everything.
 CRED_CHAR_LIMIT = 60 -- the limit of characters for username/password (credentials)
 
@@ -125,7 +129,18 @@ ERR_NUMBER_NULL = 6
 ERR_NUMBER_SMALL = 7
 ERR_NUMBER_NAN = 8
 
-MSYS.Errors = { -- every error *MUST* have an assigned string here!
+
+-- for command parser
+NOT_FOUND = 9
+NO_RIGHTS = 10
+CANT_EXECUTE = 11
+UNKNOWN_ERROR = 12
+PARAM_ERR = 13
+NO_EXEC = 14 -- not an error. it's a marker for it to not try to run anything else.
+
+
+
+MSYS.Errors = { -- every error *MUST* have an assigned string here! THIS IS VERY IMPORTANT
     [ERR_STRING_NULL] = "STRING RECEIVED IS NULL (or cannot be read)",
     [ERR_STRING_EMPTY] = "RECEIVED AN EMPTY STRING",
     [ERR_STRING_LARGE] = "STRING RECEIVED EXCEEDS MAXIMUM CHARACTER LIMIT (" .. TERMINAL_CHAR_LIMIT .. ")",
@@ -136,7 +151,16 @@ MSYS.Errors = { -- every error *MUST* have an assigned string here!
     [ERR_NUMBER_SMALL] = "NUMBER RECEIVED IS TOO SMALL",
     [ERR_NUMBER_NEGATIVE] = "NUMBER RECEIVED CANNOT BE NEGATIVE",
     [ERR_NUMBER_NULL] = "NUMBER RECEIVED IS 'NULL' (or cannot be read)",
-    [ERR_NUMBER_NAN] = "INPUT IS NOT A NUMBER"
+    [ERR_NUMBER_NAN] = "INPUT IS NOT A NUMBER",
+
+
+    [NOT_FOUND] = "Command not found. Type 'help' to display a list of modules.",
+    [NO_RIGHTS] = "No rights to execute command.",
+    [CANT_EXECUTE] = "Cannot execute command.",
+    [UNKNOWN_ERROR] = "UNKNOWN ERROR (missing state?)",
+    [PARAM_ERR] = "Parameter error",
+
+
 }
 
 -- END OF MONITOR/TERMINAL ERRORS

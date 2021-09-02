@@ -2,8 +2,8 @@ MSYS = MSYS or {}
 NEXUS = NEXUS or {}
 NEXUS.Akasha = NEXUS.Akasha or {}
 
-NEXUS.Logs = {}
-NEXUS.Akasha.Logs = {}
+NEXUS.Logs = NEXUS.Logs or {}
+NEXUS.Akasha.Logs = NEXUS.Akasha.Logs or {}
 
 function NEXUS.Akasha.Log(fullMessage, clientAuthorized)
     -- for the record, clientAuthorized being true implies wanting the log to originate from a CLIENT realm.
@@ -58,6 +58,8 @@ end
 
 function NEXUS.ClearLog()
     table.Empty(NEXUS.Logs)
+    net.Start("NEXUS_ClearLogs")
+    net.Broadcast()
 end
 
 print("nexus.lua reloaded.")

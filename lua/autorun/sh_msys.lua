@@ -48,7 +48,7 @@ function MSYS.err(text,target,...) -- preferred calling: MSYS.err("text etc here
 	end
 
 	if target == TARGET_STRING then -- run all possible errors
-		local text = string.Trim(tex) -- taking the first argument as the given text
+		local text = string.Trim(text) -- taking the first argument as the given text
 		if not isstring(text) then
 			if not ign(ERR_STRING_NOT_STRING) then
 				return ERR_STRING_NOT_STRING
@@ -65,7 +65,7 @@ function MSYS.err(text,target,...) -- preferred calling: MSYS.err("text etc here
 			end
 		end
 
-		if text > TERMINAL_CHAR_LIMIT then
+		if #text > TERMINAL_CHAR_LIMIT then
 			if not ign(ERR_STRING_LARGE) then
 				return ERR_STRING_LARGE
 			end

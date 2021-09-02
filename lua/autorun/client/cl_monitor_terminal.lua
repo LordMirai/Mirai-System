@@ -2,93 +2,134 @@ MSYS = MSYS or {}
 NEXUS = NEXUS or {}
 MirUtil = MirUtil or {}
 
-local function insertTerminal(text)
-
+local function insertTerminal(text,noParse)
+	if noParse == nil then noParse = false end
+	local ply = LocalPlayer()
 	if not file.Exists("MSYS","DATA") then
 		file.CreateDir("MSYS")
 	end
 	if not file.Exists("MSYS/client_terminal.txt","DATA") then
 		file.Write("MSYS/client_terminal.txt","") -- write nothing :)
-	end
+	end	
 
 	local prettyTable = util.JSONToTable(file.Read("MSYS/client_terminal.txt","DATA")) or {}
 
-	table.insert(prettyTable,text)
-
+	table.insert(prettyTable,"\n"..text)
 	file.Write("MSYS/client_terminal.txt",util.TableToJSON(prettyTable,true))
-
-	print("Pretend we inserted '"..text.."' into the terminal, for now.")
-
-	print("prettyTable printed below")
-	PrintTable(prettyTable)
-	print("end of table print.\n")
-
-    MSYS.parseCommand(text)
+	if noParse then
+		if ply.activeTxtInput then
+			ply.activeTxtInput:AppendText("\n"..text)
+		end
+    else
+    	if ply.activeTxtInput then
+			ply.activeTxtInput:AppendText("\n> "..text)
+		end
+		NEXUS.Log("Terminal command run: "..text.." from '"..ply:Nick().."' ("..ply:SteamID()..")")
+		MSYS.parseCommand(text)
+    end
 end
 
-local function clearTerminal()
-	local prettyTable = util.JSONToTable(file.Read("MSYS/client_terminal.txt","DATA")) or {}
-	print("terminal table before clear:")
-	PrintTable(prettyTable)
-	print("end")
-	table.empty(prettyTable)
+function MSYS.TerminalPrint(text)
+	insertTerminal(text,true)
+end
+
+function MSYS.clearTerminal()
+	if LocalPlayer().activeTxtInput then
+		LocalPlayer().activeTxtInput:SetText("Terminal cleared.\n\n")
+	end
 	file.Write("MSYS/client_terminal.txt","")
-
-	print("terminal table after clear:")
-	PrintTable(prettyTable)
 end
 
-function NEXUS.StartTerminal(ply,mon,shouldClear,parseReturn)
+function NEXUS.StartTerminal(shouldClear,parseReturn)
+	local ply = LocalPlayer()
+	local mon = NEXUS.NEXUS.Monitor
     if parseReturn == nil then parseReturn = false end -- if we didn't get here from sending a command, don't expect anything.
     if shouldClear then
-        clearTerminal()
+        MSYS.clearTerminal()
         print("terminal cleared")
     end
     local frame = vgui.Create("DFrame")
     frame:SetTitle("[MSYS - MONITOR] Terminal view")
-    MirUtil.ClassicFrame(frame,900,500)
+    MirUtil.ClassicFrame(frame,900,800)
 
     local terminalView = vgui.Create("DPanel",frame)
-	terminalView:SetSize(880,400)
-    terminalView:SetPos(10,20)
-	terminalView:SetVisible(mon:GetAccessLevel() == LEVEL_ADMIN)
+	terminalView:SetSize(880,690)
+    terminalView:SetPos(10,30)
+	terminalView:SetVisible(mon:Allowed(LEVEL_ADMIN))
 
 	local tText = vgui.Create("RichText",terminalView) -- terminalText, the actual text element of the panel
 	tText:Dock(FILL)
-	tText:InsertColorChange(250,250,250) -- white text
+	function tText:Paint(w,h)
+		draw.RoundedBox(0,0,0,w,h,Color(250,250,250))
+	end
+	tText:InsertColorChange(0,0,0,255) -- black on white
 	tText:AppendText("This should be sent to the terminal.")
 
-	local terminalInput = vgui.Create("DTextEntry",terminalView)
+	ply.activeTxtInput = tText
+
+	local terminalInput = vgui.Create("DTextEntry",frame)
 	terminalInput:SetSize(terminalView:GetWide(),20)
-	terminalInput:SetPos(terminalView:GetPos()+Vector(0,terminalView:GetTall()+5)) -- should put it right underneath it.
+	terminalInput:SetPlaceholderText("[Mirai System] Send on level: "..MSYS.LevelStrings[mon:GetAccessLevel()])
+	local x,y = terminalView:GetPos()
+	terminalInput:SetPos(x,y+terminalView:GetTall()+5) -- should put it right underneath it.
 	function terminalInput:OnEnter(txt)
 		txt = string.Trim(txt)
-		if txt == "" then return end
 		if tobool(MSYS.err(txt,TARGET_STRING)) then
 			terminalInput:SetValue("ERROR: "..MSYS.errMsg(txt))
 			return
 		end
-		insertTerminal(txt) -- this is mostly for a text file thingy for when it reloads the frame
-		print("should've printed '"..txt.."' to terminal.")
+		ply.registeredLastMessage = txt
+		terminalInput:SetText("")
+		terminalInput:RequestFocus()
+		insertTerminal(txt)
 	end
 
     local backB = vgui.Create("DButton",frame)
     backB:SetSize(200,30)
-    backB:SetPos(frame:GetWide()/2-backB:GetWide()/2,300)
+    backB:SetPos(frame:GetWide()/2-backB:GetWide()/2,frame:GetTall()-backB:GetTall()-10)
     backB:SetText("Back to monitor")
     backB:SetTextColor(Color(250,250,250))
     backB:SetFont("MSYS_Monitor_Font")
     MirUtil.Button(backB,frame,Color(194,138,35),Color(255,166,0),function()
-        MSYS.OpenMonitorView(ply,mon,false)
+        MSYS.OpenMonitorView(false)
         frame:Remove()
     end)
 
+    local dummyB = vgui.Create("DButton",frame)
+    dummyB:SetSize(200,30)
+    dummyB:SetPos(frame:GetWide()/4-backB:GetWide()/2,frame:GetTall()-backB:GetTall()-10)
+    dummyB:SetText("Dummy message")
+    dummyB:SetTextColor(Color(250,250,250))
+    dummyB:SetFont("MSYS_Monitor_Font")
+    MirUtil.Button(dummyB,frame,Color(14,68,235),Color(55,16,250),function()
+    	tText:AppendText("\n"..NEXUS.DummyMessages()[math.random(1,#MSYS.DummyMessages)])
+    end)
 
-    if parseReturn != false then
+
+    if parseReturn then -- if neither false nor nil
         if istable(parseReturn) then
             print("parseReturn returns a table, to be printed below.")
             PrintTable(parseReturn)
+		else
+			Error("[MSYS] it seems parseReturn returns a non-table value?")
+			print(parseReturn)
         end
+    end
+
+    function frame:OnRemove()
+    	ply.activeTxtInput = nil
+    	ply.registeredLastMessage = ""
     end
     
 end
+
+hook.Add("Move","DetectUpArrow",function(ply,moveData)
+	if ply:IsValid() then
+		if ply.activeTxtInput then
+			if input.WasKeyPressed(KEY_UP) then
+				print("THIS FOUND")
+				ply.activeTxtInput:SetText(ply.registeredLastMessage)
+			end
+		end
+	end
+end)

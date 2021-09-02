@@ -8,18 +8,30 @@ include("shared.lua")
 util.AddNetworkString("MSYS_NexusUse")
 util.AddNetworkString("MSYS_NexusStatus")
 util.AddNetworkString("MSYS_NEXUS_RequestDisconnectMonitor")
+util.AddNetworkString("MSYS_NexusMonitorConnected")
 
 
 -- end of NW strings
 
 function ENT:Connections()
+	local mon = (self.MonitorConnected == true) or false
+	local dp = (self.DEEPConnected == true) or false
+	local adm = false
+	local usr = false
+	local cm = false
+	if dp then adm = (NEXUS.NEXUS.DEEP.ACUConnected or false) end
+	if adm then usr = (self.DEEP.ACU.UUConnected or false) end
+	if usr then cm = (self.DEEP.ACU.UU.CMMConnected or false) end
+
 	local conn = {
-		monitor = self.MonitorConnected,
-		user = self.UUConnected,
-		admin = self.ACUConnected, 
-		cmm = self.CMMConnected,
-		deep = self.DEEPConnected
+		monitor = mon,
+		deep = dp,
+		admin = adm,
+		user = usr,
+		cmm = cm
 	}
+	print("conns:")
+	PrintTable(conn)
 	return conn
 end
 
@@ -47,7 +59,11 @@ end
 
 function ENT:Ready()
 	if not self:IsValid() then return end
-	return tobool(self.MonitorConnected == true and self.UUConnected == true and self.ACUConnected == true and self.CMMConnected == true and self.DEEPConnected == true)
+	local rdy = true
+	for k,v in pairs(self:Connections()) do
+		if v == false then rdy = false end
+	end
+	return rdy
 end
 
 function ENT:Initialize()
@@ -81,12 +97,15 @@ end
 
 function ENT:Use(ply)
 	if not self:IsValid() or not ply:IsValid() then return end
-	if not self:Ready() or (self:GetStatus() != NEXUS_SHUTDOWN) then
+	if ((self:Ready()) == false) or (self:GetStatus() != NEXUS_SHUTDOWN) then
+		print("considering this still passes, let's see")
+		print(self:Ready() == false,self:GetStatus() != NEXUS_SHUTDOWN)
 		net.Start("MSYS_NexusStatus")
 		net.WriteEntity(self)
 		net.WriteTable(self:Connections())
 		net.Send(ply)
-	elseif self:Ready() and self:GetStatus() == NEXUS_SHUTDOWN then
+	elseif (self:Ready() == true) and self:GetStatus() == NEXUS_SHUTDOWN then
+
 		self:SetStatus(NEXUS_ACTIVE)
 		ply:Tell("Nexus started up successfully.")
 		NEXUS.Log("Nexus started up by  '"..ply:Nick().."'  ("..ply:SteamID()..")")
@@ -95,25 +114,49 @@ end
 
 function ENT:StartTouch(peripheral)
 	if peripheral:GetClass() == "msys_monitor" then
-		if not self.MonitorConnected then
-			self.Monitor = peripheral
-			self.MonitorConnected = true
-			NEXUS.Log("Monitor connected.")
-			self.monRope = constraint.Rope(self,peripheral, 0, 0, self:WorldToLocal(self:GetPos()), Vector(0,0,0), ROPE_LENGTH, 50, 0, 1, "cable/cable2", false)
-
+		if not peripheral.NexusConnected then
+			self:ConnectMonitor(peripheral)
+			NEXUS.NEXUS.Monitor = peripheral
+			NEXUS.Log("Monitor connected. ("..peripheral:GetSerialKey()..")")
+			peripheral.NexusConnected = true
 			peripheral.NEXUS = self
+
+			net.Start("MSYS_NexusMonitorConnected")
+			net.WriteEntity(peripheral)
+			net.Broadcast()
+
 		end
 
-	elseif peripheral:GetClass() == "msys_uu" then
-		if not self.UUConnected then
-			self.UU = peripheral
-			self.UUConnected = true
+	elseif peripheral:GetClass() == "msys_deep" then
+		if not self.DEEPConnected and not peripheral.NexusConnected then
+			self.DEEP = peripheral
+			self.DEEPConnected = true
 			NEXUS.Log("User Unit connected.")
+			self.deepRope = constraint.Rope(self,peripheral, 0, 0, self:WorldToLocal(self:GetPos()), Vector(0,0,0), ROPE_LENGTH, 50, 0, 1, "cable/cable2", false)
+			peripheral.NexusConnected = true
+			peripheral.NEXUS = self
+			hook.Run("MSYSPeripheralConnected",peripheral,self)
 		end
 	end
 end
+
+hook.Add("MSYSPeripheralConnected","HandleExteriorConnections",function(ent1,ent2)
+	print("Periperal ",ent1," connected to peripheral ",ent2)
+end)
 
 net.Receive("MSYS_NEXUS_RequestDisconnectMonitor",function()
 	local nex = net.ReadEntity()
 	nex:DisconnectMonitor()
 end)
+
+MirUtil.Configurator["nexus"] = {
+    action = function(ply,ent)
+        print("nexus forced to be ready")
+
+        ent.MonitorConnected = true
+        ent.UUConnected = true
+        ent.ACUConnected = true
+        ent.CMMConnected = true
+        ent.DEEPConnected = true
+    end
+}

@@ -9,6 +9,14 @@ surface.CreateFont("MSYS_Monitor_Font", {
     shadow = true
 })
 
+surface.CreateFont("MSYS_Monitor_Font_Small", {
+    font = "Times New Roman",
+    size = 20,
+    weight = 6000,
+    bold = true,
+    shadow = true
+})
+
 surface.CreateFont("MSYS_Monitor_Font_noshadow", {
     font = "Times New Roman",
     size = 30,
@@ -29,6 +37,17 @@ function MSYS.attemptLogin(ply, user, pass, monitor)
         return
     end
     if not level then
+        return
+    end
+    user = tostring(user)
+    pass = tostring(pass)
+    if user == '' then
+        ply:Tell("Blank username provided.",Color(250,50,50))
+        return
+    end
+
+    if pass == '' then
+        ply:Tell("Blank password provided.",Color(250,50,50))
         return
     end
     NEXUS.Log("Login attempt from '" .. ply:Nick() .. "' (" .. ply:SteamID() .. ")")
@@ -53,7 +72,7 @@ function MSYS.attemptLogin(ply, user, pass, monitor)
         if not monitor:IsValid() then
             return
         end
-        MSYS.OpenMonitorView(ply, monitor)
+        MSYS.OpenMonitorView()
     end)
 
     if not userConf then

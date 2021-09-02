@@ -31,9 +31,11 @@ end
 
 function ENT:SetupDataTables()
     self:NetworkVar("Float", 0, "AccessLevel")
+    self:NetworkVar("String", 1, "SerialKey")
 
     if SERVER then
         self:SetAccessLevel(LEVEL_SURFACE)
+        self:SetSerialKey("KEY INIT")
     end
 end
 

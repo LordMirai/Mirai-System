@@ -18,6 +18,15 @@ function ENT:Initialize()
 	self.IsMonitor = true
 
 	self:SetAccessLevel(LEVEL_SURFACE)
+	
+	local serial = "MON_"..math.random(2000,9999) -- serial would be smth like MON_2532
+	self:SetSerialKey(serial)
+
+	self.UUConnected = false
+	self.ACUConnected = false
+	self.DEEPConnected = false
+	self.NexusConnected = false
+	
 end
 
 function ENT:Use(ply)
@@ -31,8 +40,6 @@ function ENT:Use(ply)
 		ply:Tell("Connected NEXUS is not active")
 		return
 	end
-
-	NEXUS.Log("'"..ply:Nick().."' used a monitor.")
 	net.Start("MSYS_Monitor_Use")
 	net.WriteEntity(self)
 	net.Send(ply)
