@@ -12,8 +12,7 @@ function ENT:Initialize()
 	self:SetCustomCollisionCheck(true)
 	self:DrawShadow(false)
 
-	self.IsCMM = true
-	self.WUConnected = false
+	self.IsWU = true
 
 	local phys = self:GetPhysicsObject()
 	if phys:IsValid() then
@@ -24,13 +23,4 @@ function ENT:Initialize()
 		self:Activate()
 	end
 
-end
-
-
-function ENT:StartTouch(ent)
-	if ent.IsWU then
-		if not self.WUConnected and not ent.CMMConnected then
-
-		end
-	end
 end

@@ -1,6 +1,27 @@
 MSYS = MSYS or {}
 NEXUS = NEXUS or {}
 
+function MSYS.spawnNexusSystem(ply)
+	MirUtil.TellAll(ply:Nick().." spawned the entire nexus system.")
+	local point = ply:GetEyeTrace().HitPos
+	point = point + Vector(0,0,120)
+
+	entTab = {
+		"msys_monitor","msys_cmm","msys_uu","msys_acu","msys_deep","nexus"
+	}
+	PrintTable(entTab)
+	timer.Create("MSYS_SpawnNexus_timer",1,6,function()
+		local ind = timer.RepsLeft("MSYS_SpawnNexus_timer")+1
+		local ye = entTab[ind]
+		local ent = ents.Create(ye)
+		print("["..ind.."]  spawned a ",ent.PrintName)
+		ent:SetPos(point+Vector(10*ind,0,20))
+		ent:Spawn()
+	end)	
+
+
+end
+
 hook.Add("Initialize","InitNEXUSNum",function()
 	NEXUS.Spawned = false
 end)

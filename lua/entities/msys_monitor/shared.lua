@@ -73,3 +73,33 @@ function ENT:Allowed(acc)
     end
     return self:GetAccessLevel() >= acc
 end
+
+function ENT:OnRemove() -- we will use this to formally disconnect everything
+    if self.NexusConnected then
+        if NEXUS.NEXUS:IsValid() then 
+            NEXUS.NEXUS.MonitorConnected = false
+            NEXUS.NEXUS.Monitor = nil
+        end
+    end
+
+    if self.UUConnected then 
+        if self.UU then
+            self.UU.MonitorConnected = false
+            self.UU.Monitor = nil
+        end
+    end
+
+    if self.ACUConnected then 
+        if self.ACU then
+            self.ACU.MonitorConnected = false
+            self.ACU.Monitor = nil
+        end
+    end
+
+    if self.DEEPConnected then 
+        if self.DEEP then
+            self.DEEP.MonitorConnected = false
+            self.DEEP.Monitor = nil
+        end
+    end
+end

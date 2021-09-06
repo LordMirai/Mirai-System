@@ -2,6 +2,9 @@ MSYS = MSYS or {}
 
 local entmeta = FindMetaTable("Entity")
 
+
+local cvar = CreateConVar("msys_full_delete_on_remove",MSYS_REMOVE_ALL and 1 or 0,FCVAR_NONE,"Whether the entire system should be removed when the nexus is deleted",0,1)
+
 function entmeta:ConnectMonitor(ent)
     if self.MonitorConnected == true then
         return

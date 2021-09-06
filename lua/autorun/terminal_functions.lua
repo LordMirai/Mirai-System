@@ -79,7 +79,7 @@ local function helpinfo(func)
     return message
 end
 
-local function helpCallback(...)
+function MSYS.helpCallback(...)
     local args = {...}
     local ttab = table.LowerKeyNames(MSYS.TerminalCommands) -- temporary table
     local usingArgs = false
@@ -277,10 +277,17 @@ MSYS.TerminalCommands = {
             },
             ["dummy"] = {
                 ["help"] = "Print dummy messages to the screen",
-                ["action"] = 
-            }
-        }
-    }
+                ["parameters"] = {
+                    ["count"] = {
+                        help = "How many dummy messages to send",
+                        optional = true,
+                        forceType = PAR_TYPE_NUMBER,
+                    },
+                },
+                ["action"] = MSYS.Callbacks.Dummy,
+            },
+        },
+    },
 
 }
 
@@ -294,7 +301,7 @@ local function need(tab) -- returns a table of necessary parameters (not marked 
     return necessary
 end
 
-local function locateFunc(str)
+function MSYS.locateFunc(str)
     if not isstring(str) then
         error("[MSYS] locateFunc called on non-string")
     end
@@ -302,18 +309,6 @@ local function locateFunc(str)
     if str == "" then
         return ERR_STRING_EMPTY
     end
-
-    --[[
-    THINKING STEP-BY-STEP
-
-    string: "module connect nexus". => strTab = {"module", "connect", "nexus"}
-    expected:
-    library - module
-    function (action) - connect
-    param - nexus
-
-    IDEA TERMINATED - CHANGE OF PERSPECTIVE
-    ]]
 
     local strTab = string.Explode(" ",str)
     local path = table.LowerKeyNames(MSYS.TerminalCommands)
@@ -333,7 +328,6 @@ local function locateFunc(str)
     if table.IsEmpty(strTab) then -- no further arguments
         print("lib is, again",lib)
         if ((not path[lib]["action"]) and (path[lib]["help"])) then
-            print("2")
             tprint(path[lib]["help"])
             return NO_EXEC
         end
@@ -390,6 +384,20 @@ local function locateFunc(str)
             return PARAM_ERR
         end
 
+        for k,v in pairs(paramTab) do
+            if path.parameters[k].forceType then -- we acknowledge that it must be of this specific type
+                if path.parameters[k].forceType == PAR_TYPE_NUMBER then
+                    if not (tonumber(v)) then
+                        return PARAM_ERR_NUMBER
+                    end
+                elseif path.parameters[k].forceType == PAR_TYPE_STRING then
+                    if (tonumber(v) != nil) then
+                        return PARAM_ERR_STRING
+                    end
+                end
+            end
+        end
+
 
         return act,paramTab
     end
@@ -403,7 +411,7 @@ function MSYS.parseCommand(cmdInput)
         print("received cmdTable is empty.")
     end
     
-    local execFunc,params = locateFunc(cmdInput)
+    local execFunc,params = MSYS.locateFunc(cmdInput)
     print(execFunc,params)
     -- execFunc should return a valid function
 
@@ -426,5 +434,5 @@ function MSYS.parseCommand(cmdInput)
     elseif params == nil or table.IsEmpty(params) then
         execFunc()
     end
-    -- listen.... I think we can actually get the monitor entity from here... just by doing NEXUS.NEXUS.ConnectedMonitor. *{ MUST TEST ENTITY UPDATE }*
+    -- we can actually get the monitor entity from here... just by doing NEXUS.NEXUS.ConnectedMonitor.
 end

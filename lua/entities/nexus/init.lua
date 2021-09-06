@@ -92,6 +92,13 @@ function ENT:Initialize()
 
 	MSYS.TellAll("A new NEXUS has been created.")
 
+	if NEXUS.NEXUS then
+		if NEXUS.NEXUS:IsValid() then
+			self:Remove() -- let's not have twelve of these.
+			return
+		end
+	end
+
 	NEXUS.NEXUS = self -- so we can have a quick way to the entity
 end
 
