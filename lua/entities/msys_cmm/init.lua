@@ -13,6 +13,7 @@ function ENT:Initialize()
 	self:DrawShadow(false)
 
 	self.IsCMM = true
+	self.WUConnected = false
 
 	local phys = self:GetPhysicsObject()
 	if phys:IsValid() then
@@ -23,4 +24,13 @@ function ENT:Initialize()
 		self:Activate()
 	end
 
+end
+
+
+function ENT:StartTouch(ent)
+	if ent.IsWU then
+		if not self.WUConnected and not ent.CMMConnected then
+
+		end
+	end
 end

@@ -118,4 +118,24 @@ function MSYS.errMsg(text)
 	return MSYS.Errors[MSYS.err(text)]
 end
 
+function ents.GetBySerial(serial)
+	for k,v in pairs(ents.GetAll()) do
+		if table.HasValue(MSYS.SerialedEntities,v:GetClass()) then
+			print("TRYING FOR ",v)
+			if v.serial != nil then
+				if v.serial == serial then
+					print("HI?!")
+					return v
+				end
+			end
+			if v:GetSerialKey() != nil then
+				if v:GetSerialKey() == serial then
+					return v
+				end
+			end
+			print("STOP ",v)
+		end
+	end
+end
+
 print("sh_msys.lua reloaded.")

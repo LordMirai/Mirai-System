@@ -92,6 +92,13 @@ function ENT:Initialize()
 
 	MSYS.TellAll("A new NEXUS has been created.")
 
+	if NEXUS.NEXUS then
+		if NEXUS.NEXUS:IsValid() then
+			self:Remove() -- let's not have twelve of these.
+			return
+		end
+	end
+
 	NEXUS.NEXUS = self -- so we can have a quick way to the entity
 end
 
@@ -109,6 +116,17 @@ function ENT:Use(ply)
 		self:SetStatus(NEXUS_ACTIVE)
 		ply:Tell("Nexus started up successfully.")
 		NEXUS.Log("Nexus started up by  '"..ply:Nick().."'  ("..ply:SteamID()..")")
+		self.ACU = self.DEEP.ACU
+		self.UU = self.ACU.UU
+		self.CMM = self.UU.CMM
+
+		net.Start("MSYS_UpdateNexusClientsideFinal")
+		net.WriteEntity(NEXUS.NEXUS)
+		net.WriteEntity(self.DEEP)
+		net.WriteEntity(self.ACU)
+		net.WriteEntity(self.UU)
+		net.WriteEntity(self.CMM)
+		net.Broadcast()
 	end
 end
 
@@ -141,7 +159,12 @@ function ENT:StartTouch(peripheral)
 end
 
 hook.Add("MSYSPeripheralConnected","HandleExteriorConnections",function(ent1,ent2)
-	print("Periperal ",ent1," connected to peripheral ",ent2)
+	if SERVER then
+		print("updated ",ent1,ent2)
+		net.Start("MSYS_UpdateNexusClientside")
+		net.WriteEntity(NEXUS.NEXUS)
+		net.Broadcast()
+	end
 end)
 
 net.Receive("MSYS_NEXUS_RequestDisconnectMonitor",function()
@@ -152,11 +175,12 @@ end)
 MirUtil.Configurator["nexus"] = {
     action = function(ply,ent)
         print("nexus forced to be ready")
+        ply:Tell("This doesn't actually work.")
 
-        ent.MonitorConnected = true
-        ent.UUConnected = true
-        ent.ACUConnected = true
-        ent.CMMConnected = true
         ent.DEEPConnected = true
+        ent.ACUConnected = true
+        ent.UUConnected = true
+        ent.CMMConnected = true
+        ent.MonitorConnected = true
     end
 }

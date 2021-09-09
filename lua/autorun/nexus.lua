@@ -58,8 +58,10 @@ end
 
 function NEXUS.ClearLog()
     table.Empty(NEXUS.Logs)
-    net.Start("NEXUS_ClearLogs")
-    net.Broadcast()
+    if SERVER then
+        net.Start("NEXUS_ClearLogs")
+        net.Broadcast()
+    end
 end
 
 print("nexus.lua reloaded.")

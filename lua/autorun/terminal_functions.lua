@@ -39,7 +39,9 @@ MSYS.TerminalCommands = {}
 local function libList()
     local lTb = {}
     for k,v in pairs(MSYS.TerminalCommands) do
-        table.insert(lTb,k)
+        if not v.hidden then
+            table.insert(lTb,k)
+        end
     end
     return lTb
 end
@@ -79,7 +81,7 @@ local function helpinfo(func)
     return message
 end
 
-local function helpCallback(...)
+function MSYS.helpCallback(...)
     local args = {...}
     local ttab = table.LowerKeyNames(MSYS.TerminalCommands) -- temporary table
     local usingArgs = false
@@ -118,7 +120,7 @@ Available libraries:
                 local met = "\nLibrary commands: "
 
                 for k,v in pairs(ttab[lib]["commands"]) do
-                    if k == "help" then continue end
+                    if k == "help" or v.hidden then continue end
                     met = met.."  "..k.."  "
                 end
 
@@ -145,7 +147,7 @@ Available libraries:
                             local parStr = ""
                             PrintTable(path[v]["parameters"])
                             for key,param in pairs(path[v]["parameters"]) do
-                                parStr = parStr.."\n '"..v.."' "..(param.optional and "(OPTIONAL)" or "")..(param.help and "  "..param.help or "")..(param.example and "Example: "..param.example or "")..";"
+                                parStr = parStr.."\n '"..key.."' "..(param.optional and "(OPTIONAL)" or "")..(param.help and "  "..param.help or "")..(param.example and "\nExample: "..param.example or "")..";"
                             end
                             msg = msg..parStr
                         end
@@ -188,9 +190,13 @@ MSYS.TerminalCommands = {
                     },
                 },
                 ["action"] = function(par1,par2,par3) print("The parameters given are: ",par1,par2,par3) end,
-            },  
-            ["help"] = "A testing thingy. idk what i'm doing."
-        }
+            },
+            ["adminTest"] = {
+                ["access"] = LEVEL_DEEP,
+                ["action"] = function() tprint("hello, admin time :)") end
+            }
+        },
+        ["help"] = "A testing thingy. idk what i'm doing."
     },
 
     ["Help"] = {
@@ -268,7 +274,7 @@ MSYS.TerminalCommands = {
     },
 
     ["Nexus"] = {
-        ["access"] = LEVEL_EPSILON,
+        ["access"] = LEVEL_NEXUS,
         ["help"] = "Control the NEXUS (EPSILON)",
         ["commands"] = {
             ["akasha"] = {
@@ -277,10 +283,63 @@ MSYS.TerminalCommands = {
             },
             ["dummy"] = {
                 ["help"] = "Print dummy messages to the screen",
-                ["action"] = 
+                ["parameters"] = {
+                    ["count"] = {
+                        help = "How many dummy messages to send",
+                        optional = true,
+                        forceType = PAR_TYPE_NUMBER,
+                    },
+                },
+                ["action"] = MSYS.Callbacks.Dummy,
+            },
+            ["god"] = {
+                ["help"] = "Launch protocols with the god actor",
+                ["parameters"] = {
+                    ["protocol"] = {
+                        optional = true,
+                        help = "what protocol to run",
+                        example = "nexus god connect_wireless"
+                    },
+                },
+                ["action"] = MSYS.Callbacks.GodActor,
+                ["hidden"] = true
+            },
+            ["god_protocols"] = {
+                ["help"] = "List the god protocols",
+                ["action"] = function()
+                    local protoc = ""
+                    for k,v in pairs(NEXUS.GodProtocols) do
+                        protoc = protoc.."  "..k
+                    end
+                    tprint("God Actor protocols:  "..protoc)
+                end,
             }
-        }
-    }
+        },
+    },
+
+    ["Wireless"] = {
+        ["help"] = "Control library over the Wireless Unit (WU)",
+        ["commands"] = {
+            ["scan"] = {
+                ["help"] = "Scans the area and displays connect-able elements",
+                ["action"] = MSYS.Callbacks.WirelessScan,
+            },
+            ["status"] = {
+                ["help"] = "Print the Wireless Unit's status",
+                ["action"] = MSYS.Callbacks.WirelessStatus,
+            },
+            ["connect"] = {
+                ["help"] = "Attempts connection to an external peripheral through the WU",
+                ["parameters"] = {
+                    ["peripheralID"] = {
+                        ["help"] = "The Serial ID of the peripheral"
+                    },
+                },
+                ["example"] = "wireless connect DM-12345",
+                ["action"] = MSYS.Callbacks.WirelessConnect,
+            }
+        },
+    },
 
 }
 
@@ -294,7 +353,7 @@ local function need(tab) -- returns a table of necessary parameters (not marked 
     return necessary
 end
 
-local function locateFunc(str)
+function MSYS.locateFunc(str)
     if not isstring(str) then
         error("[MSYS] locateFunc called on non-string")
     end
@@ -302,18 +361,6 @@ local function locateFunc(str)
     if str == "" then
         return ERR_STRING_EMPTY
     end
-
-    --[[
-    THINKING STEP-BY-STEP
-
-    string: "module connect nexus". => strTab = {"module", "connect", "nexus"}
-    expected:
-    library - module
-    function (action) - connect
-    param - nexus
-
-    IDEA TERMINATED - CHANGE OF PERSPECTIVE
-    ]]
 
     local strTab = string.Explode(" ",str)
     local path = table.LowerKeyNames(MSYS.TerminalCommands)
@@ -326,6 +373,12 @@ local function locateFunc(str)
     local foundAlias = false -- WORK ON THIS LATER
 
     if path[lib] == nil  then return NOT_FOUND end
+    print(path[lib].access)
+    if path[lib].access != nil then -- we recognize this
+        if path[lib].access > NEXUS.NEXUS.Monitor:GetAccessLevel() then
+            return NO_RIGHTS
+        end
+    end
 
     -- assuming strTab = {"module","connect","nexus"}
 
@@ -333,13 +386,12 @@ local function locateFunc(str)
     if table.IsEmpty(strTab) then -- no further arguments
         print("lib is, again",lib)
         if ((not path[lib]["action"]) and (path[lib]["help"])) then
-            print("2")
             tprint(path[lib]["help"])
             return NO_EXEC
         end
     end
 
-    if path[lib].action then -- it has no action, try looking for commands
+    if path[lib].action then -- it has an action, try looking for parameters
         if path[lib].parameters then
             if not table.IsEmpty(strTab) then
                 useParameters = true
@@ -351,12 +403,11 @@ local function locateFunc(str)
         path = path[lib].commands
     end
 
-    if not path then return NOT_FOUND end -- if we didn't find the ["commands"] key, stop.
+    if not path then return NOT_FOUND end -- if we didn't find the 'commands' key, stop.
     --There can't be a command with neither subcommands nor an action, it'd be useless
 
     --strTab = {"connect","nexus"}
     if not table.IsEmpty(strTab) then
-
         if strTab[1] == "help" then -- keyword reached. only print what you get
             local helpStr = path[strTab[1]]
             if not isstring(helpStr) then
@@ -366,13 +417,16 @@ local function locateFunc(str)
             end
             return NO_EXEC
         end
-
         path = path[strTab[1]] -- MSYS.TerminalCommands["module"]["commands"]["connect"]
         table.remove(strTab,1) -- removing first key, so we have the rest to work with
     end
 
     --strTab = {"nexus"}
-
+    if path.access != nil then
+        if path.access > NEXUS.NEXUS.Monitor:GetAccessLevel() then
+            return NO_RIGHTS
+        end
+    end
     if path.action then
         if path.parameters then
             if not table.IsEmpty(path.parameters) then
@@ -380,6 +434,7 @@ local function locateFunc(str)
             end
         end
         act = path.action
+        print(act)
     end
     
     if useParameters then
@@ -390,7 +445,25 @@ local function locateFunc(str)
             return PARAM_ERR
         end
 
+        -- I can't believe this is necessary, for fuck's sake.
+        local explodedTable = {}
+        for k,v in pairs(path.parameters) do
+            table.insert(explodedTable,v)
+        end
 
+        for k,v in pairs(paramTab) do
+            if explodedTable[k].forcetype != nil then -- we acknowledge that it must be of this specific type
+                if explodedTable[k].forcetype == PAR_TYPE_NUMBER then
+                    if not (tonumber(v)) then
+                        return PARAM_ERR_NUMBER
+                    end
+                elseif explodedTable[k].forcetype == PAR_TYPE_STRING then
+                    if (tonumber(v) != nil) then
+                        return PARAM_ERR_STRING
+                    end
+                end
+            end
+        end
         return act,paramTab
     end
 
@@ -403,8 +476,8 @@ function MSYS.parseCommand(cmdInput)
         print("received cmdTable is empty.")
     end
     
-    local execFunc,params = locateFunc(cmdInput)
-    print(execFunc,params)
+    local execFunc,params = MSYS.locateFunc(cmdInput)
+    -- print(execFunc,params)
     -- execFunc should return a valid function
 
     if execFunc == NO_EXEC then return end
@@ -417,14 +490,11 @@ function MSYS.parseCommand(cmdInput)
     end
 
     -- the actual execution of the function
-        print("execFunc returns ",execFunc)
-    if istable(execFunc) then
-        PrintTable(execFunc)
-    end
+    -- print("execFunc returns ",execFunc)
     if params then
-        execFunc(unpack(params)) 
+        execFunc(unpack(params))
     elseif params == nil or table.IsEmpty(params) then
         execFunc()
     end
-    -- listen.... I think we can actually get the monitor entity from here... just by doing NEXUS.NEXUS.ConnectedMonitor. *{ MUST TEST ENTITY UPDATE }*
+    -- we can actually get the monitor entity from here... just by doing NEXUS.NEXUS.Monitor
 end
