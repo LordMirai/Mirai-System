@@ -44,9 +44,9 @@ function NEXUS.StartTerminal(shouldClear,parseReturn)
 	local ply = LocalPlayer()
 	local mon = NEXUS.NEXUS.Monitor
     if parseReturn == nil then parseReturn = false end -- if we didn't get here from sending a command, don't expect anything.
-    if shouldClear then
+    if ((shouldClear == true and cvars.Bool("msys_should_clear_terminal")) or shouldClear == FORCE_CLEAR) then
+    	print("apparently pass here?")
         MSYS.clearTerminal()
-        print("terminal cleared")
     end
     local frame = vgui.Create("DFrame")
     frame:SetTitle("[MSYS - MONITOR] Terminal view")
@@ -65,6 +65,14 @@ function NEXUS.StartTerminal(shouldClear,parseReturn)
 	tText:InsertColorChange(0,0,0,255) -- black on white
 	tText:AppendText("This should be sent to the terminal.")
 
+	local fileTxt = util.JSONToTable(file.Read("MSYS/client_terminal.txt")) or {}
+	PrintTable(fileTxt)
+	print("end of fileTxt")
+
+	for k,v in pairs(fileTxt) do
+		tText:AppendText(v)
+	end
+
 	ply.activeTxtInput = tText
 
 	local terminalInput = vgui.Create("DTextEntry",frame)
@@ -79,10 +87,14 @@ function NEXUS.StartTerminal(shouldClear,parseReturn)
 			return
 		end
 		ply.registeredLastMessage = txt
+		if #terminalInput:GetText() >= TERMINAL_BOX_LIMIT then -- if the terminal frame has too many characters, wipe it.
+			MSYS.clearTerminal()
+		end
 		terminalInput:SetText("")
 		terminalInput:RequestFocus()
 		insertTerminal(txt)
 	end
+	ply.activeTerminalInput = terminalInput
 
     local backB = vgui.Create("DButton",frame)
     backB:SetSize(200,30)
@@ -127,8 +139,7 @@ hook.Add("Move","DetectUpArrow",function(ply,moveData)
 	if ply:IsValid() then
 		if ply.activeTxtInput then
 			if input.WasKeyPressed(KEY_UP) then
-				print("THIS FOUND")
-				ply.activeTxtInput:SetText(ply.registeredLastMessage)
+				ply.activeTerminalInput:SetText(ply.registeredLastMessage)
 			end
 		end
 	end

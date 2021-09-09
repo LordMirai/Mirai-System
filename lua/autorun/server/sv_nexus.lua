@@ -7,18 +7,18 @@ function MSYS.spawnNexusSystem(ply)
 	point = point + Vector(0,0,120)
 
 	entTab = {
-		"msys_monitor","msys_cmm","msys_uu","msys_acu","msys_deep","nexus"
+		"msys_wireless_sensor","msys_monitor","msys_wu","msys_cmm","msys_uu","msys_acu","msys_deep","nexus"
 	}
-	PrintTable(entTab)
-	timer.Create("MSYS_SpawnNexus_timer",1,6,function()
-		local ind = timer.RepsLeft("MSYS_SpawnNexus_timer")+1
-		local ye = entTab[ind]
-		local ent = ents.Create(ye)
-		print("["..ind.."]  spawned a ",ent.PrintName)
-		ent:SetPos(point+Vector(10*ind,0,20))
+	undo.Create("[MSYS] Nexus system")
+	timer.Create("MSYS_SpawnNexus_timer",1,#entTab,function()
+		print(timer.RepsLeft("MSYS_SpawnNexus_timer")+1)
+		local ent = ents.Create(entTab[timer.RepsLeft("MSYS_SpawnNexus_timer")+1])
+		ent:SetPos(point+Vector(40*timer.RepsLeft("MSYS_SpawnNexus_timer"),0,20))
 		ent:Spawn()
-	end)	
-
+		undo.AddEntity(ent)
+		undo.SetPlayer(ply)
+		undo.Finish("Deleted nexus system")
+	end)
 
 end
 

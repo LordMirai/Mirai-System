@@ -19,3 +19,6 @@ util.AddNetworkString("MSYS_AKASHA_RequestLog")
 util.AddNetworkString("MSYS_Request_FetchLogs") -- for getting the sv logs clientside
 util.AddNetworkString("MSYS_Request_SendLogs")
 util.AddNetworkString("NEXUS_ClearLogs")
+
+util.AddNetworkString("MSYS_UpdateNexusClientside")
+util.AddNetworkString("MSYS_UpdateNexusClientsideFinal") -- another one, for when it's actually ready. this is to write all entities to client

@@ -1,6 +1,8 @@
 MSYS = MSYS or {}
 NEXUS = NEXUS or {}
 
+local clientCopyCvar = CreateClientConVar("msys_copy_serial_clipboard",1,true,false,"Should copy the serial key when using the /serial command?",0,1)
+
 surface.CreateFont("MSYS_Monitor_Font", {
     font = "Times New Roman",
     size = 30,
@@ -86,5 +88,25 @@ function MSYS.attemptLogin(ply, user, pass, monitor)
         monitor:SetLevel(level)
     end
 end
+
+hook.Add("AddToolMenuCategories","MiraiSystemCategory", function()
+    spawnmenu.AddToolCategory("Options","MiraiSystem","#Mirai System")
+end)
+
+hook.Add("PopulateToolMenu","MiraiSystemSettings", function()
+    spawnmenu.AddToolMenuOption("Options","MiraiSystem","MSYS_Menu","#MSYS Config","","",function(pnl)
+        if not LocalPlayer():IsSuperAdmin() then
+            pnl:Help("- Serverside settings unavailable -")
+        else
+            pnl:Help("- Serverside settings -")
+            pnl:CheckBox("Clear terminal on close","msys_should_clear_terminal")
+            pnl:CheckBox("Delete whole system on nexus remove","msys_full_delete_on_remove")
+        end
+
+        pnl:Help("")
+        pnl:Help("- Clientside settings -")
+        pnl:CheckBox("Copy serial to clipboard on /serial","msys_copy_serial_clipboard")
+    end)
+end)
 
 print("cl_msys.lua reloaded.")
