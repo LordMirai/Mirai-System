@@ -1,6 +1,8 @@
 MSYS = MSYS or {}
+MSYS.GlobalFlags = MSYS.GlobalFlags or {}
 
 local plymeta = FindMetaTable("Player")
+local entmeta = FindMetaTable("Entity")
 
 function plymeta:Tell(str,col)
 	if not col then col = Color(250,250,250) end
@@ -136,6 +138,79 @@ function ents.GetBySerial(serial)
 			print("STOP ",v)
 		end
 	end
+end
+
+
+
+-- the flag part here.
+
+function entmeta:HasFlag(flag)
+	print("[MSYS] ",self,"Checking for flag: ",flag)
+	
+	if not MSYS.EntityFlags[flag] then
+		Error("[MSYS] Flag "..tostring(flag).." could not be recognized.")
+		return false
+	end
+	
+	if not self.MSYSFlags then
+		self.MSYSFlags = {}
+		return false
+	end
+
+	if self.MSYSFlags[flag] == 1 then
+		print("Checked flag "..MSYS.EntityFlags[flag].." (true)")
+		return true
+	end
+	print("Checked flag "..MSYS.EntityFlags[flag].." (false)")
+	return false
+end
+
+
+function entmeta:SetFlag(flag) -- will return true on success, false on fail
+	if CLIENT then return end
+	if not MSYS.EntityFlags[flag] then -- in enums
+		Error("[MSYS] Flag "..tostring(flag).." could not be recognized.")
+		return false
+	end
+
+	if not self.MSYSFlags then
+		self.MSYSFlags = {}
+		return false
+	end
+
+	if self:HasFlag(flag) then
+		return false -- we don't wanna set the flag twice
+	else
+		self.MSYSFlags[flag] = 1
+		print("Added flag "..MSYS.EntityFlags[flag])
+		return true
+	end
+end
+
+
+function entmeta:UnsetFlag(flag)
+	if CLIENT then return end
+	if not MSYS.EntityFlags[flag] then
+		Error("[MSYS] Flag "..tostring(flag).." could not be recognized.")
+		return false
+	end
+
+	if not self:HasFlag(flag) then
+		print("Unset called without flag set ",self,MSYS.EntityFlags[flag])
+		return false
+	end
+
+	self.MSYSFlags[flag] = 0
+	print("Removed flag "..MSYS.EntityFlags[flag])
+	return true
+end
+
+function entmeta:Flags()
+	return self.MSYSFlags or false -- false if the table doesn't exist
+end
+
+function MSYS.CheckFlag(flag) -- global flags
+	return MSYS.GlobalFlags[flag] or false
 end
 
 print("sh_msys.lua reloaded.")

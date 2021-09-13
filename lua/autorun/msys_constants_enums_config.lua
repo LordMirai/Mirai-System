@@ -206,7 +206,37 @@ FORCE_CLEAR = 55 -- force-clearing the terminal
 NEXUS.GodProtocols = {
     ["connect_wireless"] = {"wireless status","wireless scan","wireless connect SENS_2242"},
     ["nonsense"] = {"echo you know what, get fucked.","nexus dummy "..math.random(10,50),"echo haha retard :D"},
+    ["nodisp"] = {"NODISPLAY echo this should show up without any message.","echo this will show up tho","NODISPLAY echo this won't either"}
 }
 
 GOD_ACTOR_STEP_DELAY = 1 -- seconds for the god actor to wait before executing each step.
 GOD_ACTOR_PARSE_DELAY = 0.1 -- seconds before parsing what the god actor said
+
+
+
+-- Entity / Player flags here
+-- ##########################################################
+
+--[[
+    entity flags are 0 when unset and 1 when set
+    global flags are true when set, false when not
+    _G = global pointer
+]]
+
+FLAG_INITIAL = 5000
+FLAG_USED_ONCE = 5001
+FLAG_MULTIPLE_USE = 5002
+
+FLAG_G_INITIAL = 7001
+
+MSYS.EntityFlags = {
+    FLAG_INITIAL = "Initial Flag", -- The initial flag, set on initialize, likely
+    FLAG_USED_ONCE = "Used Once",
+    FLAG_MULTIPLE_USE = "Used Multiple",
+}
+
+MSYS.ValidGlobalFlags = {
+    FLAG_G_INITIAL = "Initial Flag", -- The initial flag, set on initialize, likely
+}
+
+-- ##########################################################

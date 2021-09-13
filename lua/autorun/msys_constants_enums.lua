@@ -62,10 +62,16 @@ MSYS.DummyMessages = NEXUS.DummyMessages()
 -- General enums. Closer thing to a config so far.
 -- #################################################
 
+MSYS.DEBUG = true -- enabling debug mode for now, so we can use everything.
+
+
+
 ROPE_LENGTH_MONITOR = 200 -- length for monitor
 ROPE_LENGTH = 80 -- length for normal peripherals suppose
-MSYS.DEBUG = true -- enabling debug mode for now, so we can use everything.
+MSYS_REMOVE_ALL = false -- make true if you want the entire system to be deleted on nexus removal
 CRED_CHAR_LIMIT = 60 -- the limit of characters for username/password (credentials)
+
+WIRELESS_RANGE = 500
 
 TERMINAL_CHAR_LIMIT = 6000
 TERMINAL_NUMBER_MAX = 200000000000 -- 200 billion.
@@ -137,6 +143,14 @@ CANT_EXECUTE = 11
 UNKNOWN_ERROR = 12
 PARAM_ERR = 13
 NO_EXEC = 14 -- not an error. it's a marker for it to not try to run anything else.
+PARAM_TYPE_ERR_STRING = 15
+PARAM_TYPE_ERR_NUMBER = 16
+PARAM_TYPE_ERR = 17
+
+PAR_TYPE_NUMBER = 50
+PAR_TYPE_STRING = 51
+
+-- skip to 20
 
 
 
@@ -159,6 +173,9 @@ MSYS.Errors = { -- every error *MUST* have an assigned string here! THIS IS VERY
     [CANT_EXECUTE] = "Cannot execute command.",
     [UNKNOWN_ERROR] = "UNKNOWN ERROR (missing state?)",
     [PARAM_ERR] = "Parameter error",
+    [PARAM_TYPE_ERR] = "Parameter TYPE error.",
+    [PARAM_TYPE_ERR_STRING] = "Parameter TYPE error. Expected a string.",
+    [PARAM_TYPE_ERR_NUMBER] = "Parameter TYPE error. Expected a number.",
 
 
 }

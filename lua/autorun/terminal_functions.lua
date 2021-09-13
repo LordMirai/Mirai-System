@@ -450,7 +450,6 @@ function MSYS.locateFunc(str)
         for k,v in pairs(path.parameters) do
             table.insert(explodedTable,v)
         end
-
         for k,v in pairs(paramTab) do
             if explodedTable[k].forcetype != nil then -- we acknowledge that it must be of this specific type
                 if explodedTable[k].forcetype == PAR_TYPE_NUMBER then

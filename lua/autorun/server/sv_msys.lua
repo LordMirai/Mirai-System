@@ -58,4 +58,8 @@ function MSYS.showSerial(ply)
 
 end
 
+hook.Add("PlayerInitialSpawn","InitializePlayerFlagTable",function(ply)
+    ply.MSYSFlags = {}
+end)
+
 print("sv_msys.lua reloaded.")

@@ -50,10 +50,16 @@ MSYS.Callbacks.GodActor = function(protocol)
 	tprint("Protocol identified:  || "..table.concat(tb," ;  ").."  ||\n")
 
 	local step = 0
-
+	local nodisp = false
+	if string.upper(tb[1]) == "NODISPLAY" then
+		nodisp = true
+		table.remove(tb,1)
+	end
 	timer.Create("GodActor"..ply:EntIndex(),GOD_ACTOR_STEP_DELAY,#tb, function()
 		step = step + 1
-		tprint("[God Actor] > "..tb[step])
+		if nodisp == false then
+			tprint("[God Actor] > "..tb[step])
+		end
 		timer.Simple(GOD_ACTOR_PARSE_DELAY, function()
 			MSYS.parseCommand(tb[step])
 			if timer.RepsLeft("GodActor"..ply:EntIndex()) == 0 then
